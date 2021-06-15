@@ -26,7 +26,7 @@ python conf\config.py contains the configuration of each data set during the tra
 * DenseNet121 and DenseNet121_FCN
 * MobileNetV2 and MobileNetV2_FCN
 * NASNet and NASNet_FCN
-python network_struture includes the above network
+```python network_struture includes the above network```
 
 ## Train and Test
 ```
