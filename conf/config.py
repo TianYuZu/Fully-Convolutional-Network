@@ -17,7 +17,7 @@ CIFAR100 = {
     'num_classes': 100,
     'max_epoch': 200,
     'LR': 1e-1,
-    'lr_steps': (0, 100, 150),
+    'lr_steps': (0, 50, 100, 150),
     'batch_size': 128,
     'name': 'CIFAR100'
 }
