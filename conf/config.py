@@ -45,3 +45,11 @@ ImageNet1000 = {
     'batch_size': 192,
     'name': 'ImageNet1000'
 }
+miniImageNet = {
+    'num_classes': 100,
+    'max_epoch': 100,
+    'LR': 1e-1,
+    'lr_steps': (0, 30, 60, 90),
+    'batch_size': 192,
+    'name': 'miniImageNet'
+}
