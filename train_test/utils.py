@@ -90,13 +90,19 @@ class CosineLinear_PEDCC(nn.Module):
 
         return cos_theta  # size=(B,Classnum,1)
 
-def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, classes_num):
+def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, classes_num, loss_function):
     LR = cfg['LR']
     if torch.cuda.is_available():
         net = torch.nn.DataParallel(net, device_ids=device_ids)
         net = net.cuda()
 
     prev_time = datetime.now()
+    map_PEDCC = torch.Tensor([])
+    if loss_function == 'POD Loss':
+        map_dict = read_pkl()
+        for i in range(classes_num):
+            map_PEDCC = torch.cat((map_PEDCC, map_dict[i].float()), 0)
+        map_PEDCC = map_PEDCC.view(classes_num, -1)  # (class_num, dimension)
     history = dict()
     loss_train = []
     loss1_train = []
@@ -108,7 +114,7 @@ def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, cla
         if epoch in cfg['lr_steps']:
             if epoch != 0:
                 LR *= 0.1
-            optimizer = optim.SGD(net.parameters(), lr=LR, momentum=0.9, weight_decay=5e-4)
+            optimizer = optim.SGD(net.parameters(), lr=LR, momentum=0.9, weight_decay=5e-4)# The weight_decay of ImageNet is 1e-4
             # optimizer = nn.DataParallel(optimizer, device_ids=device_ids)
         train_loss = 0
         train_loss1 = 0
@@ -121,11 +127,15 @@ def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, cla
             if torch.cuda.is_available():
                 im = im.cuda()  # (bs, 3, h, w)
                 label = label.cuda()  # (bs, h, w)
-
-            # forward
-            # ims = im.shape
-            output = net(im)
-            loss = criterion(output, label)
+            if loss_function == 'POD Loss':
+                tensor_empty = map_PEDCC[label].float().cuda()
+                label_mse_tensor = tensor_empty.view(label.shape[0], -1)  # (batchSize, dimension)
+                label_mse_tensor = label_mse_tensor.cuda()
+                output, output2 = net(im)
+                loss = 
+            else:
+                output = net(im)
+                loss = criterion(output, label)
             length += output.pow(2).sum().item()
             num += output.shape[0]
             # backward
@@ -134,8 +144,8 @@ def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, cla
             optimizer.step()
 
             train_loss += loss.data
-            train_loss1 += loss1.item()
-            train_loss2 += loss2.item()
+#             train_loss1 += loss1.item()
+#             train_loss2 += loss2.item()
             train_acc += get_acc(output, label)
         cur_time = datetime.now()
         h, remainder = divmod((cur_time - prev_time).seconds, 3600)
