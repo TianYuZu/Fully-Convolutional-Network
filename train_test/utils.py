@@ -38,8 +38,6 @@ def get_acc_top5(output, label):
 def draw(history):
     epochs = range(1, len(history['loss_train']) + 1)
     plt.plot(epochs, history['loss_train'], 'blue', label='Training loss')
-    plt.plot(epochs, history['loss1_train'], 'green', label='Training loss1')
-    plt.plot(epochs, history['loss2_train'], 'yellow', label='Training loss2')
     plt.plot(epochs, history['loss_val'], 'r', label='Validation loss')
     plt.title('Training and Validation loss')
     plt.xlabel('Epochs')
@@ -90,6 +88,25 @@ class CosineLinear_PEDCC(nn.Module):
 
         return cos_theta  # size=(B,Classnum,1)
 
+    ##########POD Loss = CosineLoss + SCLoss#######################
+    def CosineLoss(input, target): 
+        ret = input * target 
+        ret_sum = torch.sum(ret, dim=1) 
+        ret = 1 - ret_sum 
+        ret = ret ** 2 
+        ret = torch.mean(ret) 
+        return ret 
+    
+    
+    def SCLoss(map_PEDCC, label, feature): 
+        average_feature = map_PEDCC[label.long().data].float().cuda() 
+        feature = feature - average_feature 
+        covariance100 = 1 / (feature.shape[0] - 1) * torch.mm(feature.T, feature).float() 
+        covariance100_loss = torch.sum(pow(covariance100, 2)) - torch.sum(pow(torch.diagonal(covariance100), 2)) 
+        covariance100_loss = covariance100_loss / (covariance100.shape[0] - 1) 
+        return covariance100_loss, covariance100 
+    #############################################################
+    
 def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, classes_num, loss_function):
     LR = cfg['LR']
     if torch.cuda.is_available():
@@ -132,7 +149,7 @@ def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, cla
                 label_mse_tensor = tensor_empty.view(label.shape[0], -1)  # (batchSize, dimension)
                 label_mse_tensor = label_mse_tensor.cuda()
                 output, output2 = net(im)
-                loss = 
+                loss = CosineLoss(output2, label_mse_tensor) + SCLoss(map_PEDCC, label, output2) #POD Loss = CosineLoss+SCLoss
             else:
                 output = net(im)
                 loss = criterion(output, label)
@@ -144,8 +161,6 @@ def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, cla
             optimizer.step()
 
             train_loss += loss.data
-#             train_loss1 += loss1.item()
-#             train_loss2 += loss2.item()
             train_acc += get_acc(output, label)
         cur_time = datetime.now()
         h, remainder = divmod((cur_time - prev_time).seconds, 3600)
@@ -165,14 +180,11 @@ def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, cla
                 valid_acc += get_acc(output, label)
                 length_test += output.pow(2).sum().item()/im.shape[0]
             epoch_str = (
-                "Epoch %d. Train Loss: %f, Train Acc: %f, Valid Loss: %f, Valid Acc: %f, LR: %f, Train Loss1: %f, Train Loss2: %f, length: %f, length_test: %f"
+                "Epoch %d. Train Loss: %f, Train Acc: %f, Valid Loss: %f, Valid Acc: %f, LR: %f, length: %f, length_test: %f"
                 % (epoch, train_loss / len(train_data),
                    train_acc / len(train_data), valid_loss / len(valid_data),
-                   valid_acc / len(valid_data), LR, train_loss1 / len(train_data),
-                   train_loss2 / len(train_data), length/num, length_test/len(valid_data)))
+                   valid_acc / len(valid_data), LR,length/num, length_test/len(valid_data)))
             loss_train.append(train_loss / len(train_data))
-            loss1_train.append(train_loss1 / len(train_data))
-            loss2_train.append(train_loss2 / len(train_data))
             loss_val.append(valid_loss / len(valid_data))
             acc_train.append(train_acc / len(train_data))
             acc_val.append(valid_acc / len(valid_data))
@@ -189,8 +201,6 @@ def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, cla
             torch.save(net.module.state_dict(), save_folder + 'FCN' + str(epoch+1) + '_epoch.pth')
 
     history['loss_train'] = loss_train
-    history['loss1_train'] = loss1_train
-    history['loss2_train'] = loss2_train
     history['loss_val'] = loss_val
     history['acc_train'] = acc_train
     history['acc_val'] = acc_val
