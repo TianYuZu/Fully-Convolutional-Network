@@ -17,6 +17,8 @@ FaceScrubs_Train_ROOT = xxx
 FaceScrubs_Test_ROOT = xxx
 ImageNet1000_Train_ROOT = xxx
 ImageNet1000_Test_ROOT = xxx
+miniImageNet_Train_ROOT = xxx
+miniImageNet_Test_ROOT = xxx
 
 
 #CIFAR10 data set
@@ -96,6 +98,23 @@ ImageNet1000_test_data = torchvision.datasets.ImageFolder(ImageNet1000_Test_ROOT
     transform=transforms.Compose([
         transforms.Resize(size=256),
         transforms.CenterCrop(size=224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+)
+# miniImageNet data set
+miniImageNet_train_data = torchvision.datasets.ImageFolder(miniImageNet_Train_ROOT,
+    transform=transforms.Compose([
+        transforms.RandomResizedCrop(size=84),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+)
+miniImageNet_test_data = torchvision.datasets.ImageFolder(miniImageNet_Test_ROOT,
+    transform=transforms.Compose([
+        transforms.Resize(size=96),
+        transforms.CenterCrop(size=84),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
