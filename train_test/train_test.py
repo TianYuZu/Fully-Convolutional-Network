@@ -14,7 +14,7 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='FCN Training With Pytorch')
-parser.add_argument('--dataset', default='CIFAR100', choices=['CIFAR10', 'CIFAR100', 'TinyImageNet', 'FaceScrubs', 'ImageNet1000'],
+parser.add_argument('--dataset', default='CIFAR100', choices=['CIFAR10', 'CIFAR100', 'TinyImageNet', 'FaceScrubs', 'ImageNet1000', 'miniImageNet'],
                     type=str, help='CIFAR10, CIFAR100, TinyImageNet, FaceScrubs or ImageNet1000')
 parser.add_argument('--dataset_root', default='',
                     help='Dataset root directory path')
@@ -54,6 +54,11 @@ def train():
         train_data = ImageNet1000_train_data
         test_data = ImageNet1000_test_data
         cfg = conf.ImageNet1000
+        
+    elif args.dataset == 'miniImageNet':
+        train_data = miniImageNet_train_data
+        test_data = miniImageNet_test_data
+        cfg = conf.miniImageNet
 
     else:
         print("dataset doesn't exist!")
@@ -65,6 +70,7 @@ def train():
     # ResNet50 and ResNet50_FCN
     # cnn = ResNet50(Bottleneck, [3, 4, 6, 3], num_classes=cfg['num_classes'])
     # cnn = ResNet50_FCN(Bottleneck, [3, 4, 6, 3], num_classes=cfg['num_classes'])
+    # cnn = ResNet50_FCN_Plus_POD_Loss(Bottleneck, [3, 4, 6, 3], num_classes=cfg['feature_sizes'])  #modify the output of the last convolutional layer to the feature dimension of PEDCC.
     # DenseNet121 and DenseNet121_FCN
     # cnn = DenseNet121(num_classes=cfg['num_classes'])
     # cnn = DenseNet121_FCN(num_classes=cfg['num_classes'])
@@ -76,6 +82,7 @@ def train():
     # cnn = NASNet_FCN(4, 2, 44, 44)  # For CIFAR100, the number of classes can only be 100
 
     criterion = nn.CrossEntropyLoss()
+    
 
     # train_loader = data.DataLoader(dataset, args.batch_size,num_workers=args.num_workers,shuffle=True, collate_fn=detection_collate, pin_memory=True)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=cfg['batch_size'], shuffle=True, num_workers=6, pin_memory=True)
