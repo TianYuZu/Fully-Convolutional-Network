@@ -57,6 +57,38 @@ def draw(history):
     # plt.imsave('E:/acc_and_loss/Training and validation acc.jpg')
     plt.show()
 
+    
+PEDCC_PATH = 'train_test/100_512.pkl'#load PEDCC
+
+def read_pkl():
+    f = open(PEDCC_PATH, 'rb')
+    a = pickle.load(f)
+    f.close()
+    return a    
+
+    
+class CosineLinear_PEDCC(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(CosineLinear_PEDCC, self).__init__()
+
+        self.in_features = in_features
+        self.out_features = out_features
+        self.weight = Parameter(torch.Tensor(in_features, out_features), requires_grad=False)
+        #self.weight.data.uniform_(-1, 1).renorm_(2, 1, 1e-5).mul_(1e5)
+        map_dict = read_pkl()
+        tensor_empty = torch.Tensor([]).cuda()
+        for label_index in range(self.out_features):
+            tensor_empty = torch.cat((tensor_empty, map_dict[label_index].float().cuda()), 0)
+        label_40D_tensor = tensor_empty.view(-1, self.in_features).permute(1, 0)
+        label_40D_tensor = label_40D_tensor.cuda()
+        self.weight.data = label_40D_tensor
+
+    def forward(self, input):
+        x = input  # size=(B,F)    F is feature len
+        w = self.weight  # size=(F,Classnum) F=in_features Classnum=out_features
+        cos_theta = x.mm(w)  # size=(B,Classnum)  x.dot(ww)
+
+        return cos_theta  # size=(B,Classnum,1)
 
 def train_test_fcn(net, train_data, valid_data, cfg, criterion, save_folder, classes_num):
     LR = cfg['LR']
