@@ -82,14 +82,14 @@ def train():
     # cnn = NASNet_FCN(4, 2, 44, 44)  # For CIFAR100, the number of classes can only be 100
 
     criterion = nn.CrossEntropyLoss()
-    
+    loss_function = 'Softmax Loss' # Softmax Loss or POD Loss
 
     # train_loader = data.DataLoader(dataset, args.batch_size,num_workers=args.num_workers,shuffle=True, collate_fn=detection_collate, pin_memory=True)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=cfg['batch_size'], shuffle=True, num_workers=6, pin_memory=True)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=cfg['batch_size'], shuffle=False, num_workers=6, pin_memory=True)
 
     # start training
-    utils.train_test_fcn(cnn, train_loader, test_loader, cfg, criterion, args.save_folder, cfg['num_classes'])
+    utils.train_test_fcn(cnn, train_loader, test_loader, cfg, criterion, args.save_folder, cfg['num_classes'], loss_function=loss_function)
 
 
 if __name__ == '__main__':
